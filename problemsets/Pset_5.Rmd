@@ -1,0 +1,237 @@
+---
+title: "Pset_5"
+output: html_document
+date: "2024-01-21"
+---
+QUESTION ONE, Logistic Regression
+
+1a)
+Run the code below to clean the movie data set and split the data into testing and training sets. (Note, you will have to install the package purrr to run the code)
+```{r setup}
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+library("dplyr")
+library("forcats")
+library("readr")
+library("purrr")
+library("ggplot2")
+library("plotROC")
+install.packages("plotROC")
+
+movies <- read_csv("/Users/raneemrahman/Desktop/MGSC_310/datasets/IMDB_movies.csv")
+
+movies_clean <- movies %>%
+  mutate(budgetM = budget/1000000, grossM = gross/1000000,
+         profitM = grossM - budgetM, blockbuster = ifelse(profitM >
+                                                            100, 1, 0), genre_main = as.factor(unlist(map(strsplit(as.character(movies$genres),
+                                                                                                                   "\\|"), 1))) %>%
+           fct_lump(10), rating_simple = fct_lump(content_rating,
+                                                  n = 4)) %>%
+  filter(budget < 400000000, content_rating != "", content_rating !=
+           "Not Rated") %>%
+  mutate(rating_simple = rating_simple %>%
+           fct_drop()) %>%
+  distinct()
+
+library("rsample")
+movies_split <- initial_split(movies_clean)
+movies_train <- training(movies_split)
+movies_test <- testing(movies_split)
+```
+
+1b) 
+The variable “blockbuster” in the movies dataframe equals 1 if a movie earns more than $100M USD in profit, and 0 otherwise. Fit a logistic regression model to predict whether a movie is a blockbuster using imdb_score, budgetM, and genre_main as predictors. Store this logistic model as movies_logit1 and run the summary command over the fitted logistic model object.
+
+```{r movies}
+movies_logit1 <- glm(blockbuster ~ imdb_score + budgetM + genre_main,
+                     data = movies_train,
+                     family = "binomial")
+summary(movies_logit1)
+```
+
+1c)
+Exponentiate the fitted coefficient vector and print the results.
+
+```{r ratio}
+odds_ratios <- exp(coef(movies_logit1))
+print(odds_ratios)
+```
+
+1d)
+Interpret the coefficient on genre_mainAnimation using the odds ratio interpretation formula.
+
+```{r animation}
+coef_animation <- coef(movies_logit1)["genre_mainAnimation"]
+odds_ratio_animation <- exp(coef_animation)
+print(paste("Odds Ratio for genre_mainAnimation:", round(odds_ratio_animation, 3)))
+```
+
+1e)
+Interpret the coefficient on imdb_score using the same odds ratio interpretation formula. Is it true that blockbusters get worse IMDB scores?
+```{r imdb}
+coef_imdb_score <- coef(movies_logit1)["imdb_score"]
+odds_ratio_imdb_score <- exp(coef_imdb_score)
+print(paste("Odds Ratio for imdb_score:", round(odds_ratio_imdb_score, 3)))
+# No, it is not true that blockbusters get worse imdb scores
+# The odds ratio shows a positive relationship between IMDB score and a movie being a blockbuster
+```
+
+1f)
+Using the movies_logit1 model generate predicted probabilities for the test and training sets. (e.g. use the fitted model to ‘score’ the dataset.) Print the top of each of these score vectors using the head() command.
+```{r probability}
+train_pred_probs <- predict(movies_logit1, newdata = movies_train, type = "response")
+print("Top of Training Set Predicted Probabilities:")
+head(train_pred_probs)
+
+test_pred_probs <- predict(movies_logit1, newdata = movies_train, type = "response")
+print("Top of Test Set Predicted Probabilities:")
+head(test_pred_probs)
+```
+
+1g)
+Create two dataframes, results_train and results_test that each contain the following variables: true_class (holding the true blockbuster status), and prob_event (the probability that the film is a blockbuster according to your model). Note you will need to change blockbuster to a numeric
+```{r dataframe}
+
+movies_train$blockbuster <- as.numeric(movies_train$blockbuster)
+movies_test$blockbuster <- as.numeric(movies_test$blockbuster)
+
+results_train <- data.frame(
+  true_class = movies_train$blockbuster,
+  prob_event = predict(movies_logit1, newdata = movies_train,
+                       type = "response"))
+
+results_test <- data.frame(
+  true_class = movies_test$blockbuster,
+  prob_event = predict(movies_logit1, newdata = movies_test,
+                       type = "response"))
+
+```
+
+1h)
+Use the plotROC package to generate two ROC plots, one each for the test and training sets. Be sure to label the cutoff probabilities along the ROC lines using the cutoffs.at = c(0.9,0.8,0.7,0.5,0.3,0.2,0.1) option as shown in the lecture slides.
+
+```{r}
+
+roc_train <- ggplot(results_train, aes(m = prob_event, d = true_class)) +
+  geom_roc(labelsize = 3.5, cutoffs.at = c(0.9,0.8,0.7,0.5,0.3,0.2,0.1)) +
+  theme_minimal() + labs(title = "ROC Plot - Training Set")
+
+print(roc_train)
+```
+
+```{r}
+
+roc_test <- ggplot(results_test, aes(m = prob_event, d = true_class)) +
+  geom_roc(labelsize = 3.5, cutoffs.at = c(0.9,0.8,0.7,0.5,0.3,0.2,0.1)) +
+  theme_minimal() + labs(title = "ROC Plot - Testing Set")
+
+print(roc_test)
+
+```
+
+
+
+
+1i)
+Calculate the AUC for the test and training sets using the function calc_auc. Explain what AUC measures in your own words.
+
+AUC measures the difference between positive and negative and measures overall performance
+```{r calc}
+
+calc_auc(roc_train)
+calc_auc(roc_test)
+
+```
+
+
+QUESTION TWO, Lasso and Ridge
+
+2a)
+Load the IMDB_movies dataset and run the code below to create the testing and training datasets.
+```{r setup 2}
+set.seed(1818)
+
+library("readr")
+library("dplyr")
+library("forcats")
+library("rsample")
+movies <- read_csv("/Users/raneemrahman/Desktop/MGSC_310/datasets/IMDB_movies.csv")
+
+
+movies_clean <- movies %>%
+    mutate(budgetM = budget/1000000, grossM = gross/1000000,
+        log_gross = log(gross), log_budget = log(budget), log_imdb_score = log(imdb_score)) %>%
+    mutate(rating_factor = fct_lump_n(content_rating, n = 4),
+        country_factor = fct_lump_n(country, n = 6), genre_factor = fct_lump_n(genres,
+            n = 6))
+
+movies_split <- initial_split(movies_clean, prop = 0.75)
+movies_train <- training(movies_split)
+movies_test <- testing(movies_split)
+
+```
+
+2b)
+Load the libraries glmnet and glmnetUtils installing them if necessary. Use the function cv.glmnet to fit a Ridge model against the movies_train dataset to predict log_gross. Use the following as independent variables: rating_factor, country_factor, genre_factor, log_budget, director_facebook_likes, cast_total_facebook_likes.
+
+```{r library}
+install.packages("glmnet")
+library('glmnet')     
+library('glmnetUtils')
+
+independent_vars <- c("rating_factor", "country_factor", "genre_factor", "log_budget", "director_facebook_likes", "cast_total_facebook_likes")
+
+colnames(movies_train)
+
+X_train <- model.matrix(log_gross ~ .,
+                  data = movies_train[, c(independent_vars, "log_gross")])
+
+y_train <- movies_train$log_gross
+
+ridge_model <- cv.glmnet(X_train, y_train, alpha = 0)
+
+print(ridge_model)
+```
+
+2c)
+Use the coef function over the ridge_fit object to print the coefficient matrix using the lambda of lambda.1se.
+
+```{r ridge fit}
+
+coefficient_matrix <- coef(ridge_model, s = "lambda.1se")
+print(coefficient_matrix)
+
+```
+
+2d) 
+Use the plot function over the ridge fit object. Describe the plot in your own words, including the two vertical dashed lines.
+
+The first vertical dashed line is the Lambda.min
+The second vertical dashes line in the Lambda.1se
+This plot shows how the y-axis varies as we increase lamda with cross-validation
+```{r plot}
+
+plot(ridge_model)
+
+```
+
+2e) 
+Estimate a lasso model using the function cv.glmnet, using the same independent and dependent variables as before, and store the model as lasso_fit
+
+```{r lasso}
+install.packages("glmnet")
+library(glmnet)
+library(glmnetUtils)
+
+lasso_model <- cv.glmnet(X_train, y_train, alpha = 1)
+lasso_fit <- lasso_model
+
+```
+
+2f)
+Use the coef(lasso_fit) function over the lasso fit object specifying the lambda.min version of the coefficients.
+
+```{r lasso_fit}
+lasso_coefficients <- coef(lasso_fit, s = "lambda.min")
+print(lasso_coefficients)
+
+```

@@ -1,0 +1,162 @@
+---
+title: "Problem Set 1"
+author: "Raneem Rahman"
+subtitle: MGSC 310 Problem Set Template
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+---
+
+```{r setup, include=FALSE}
+
+# Please leave this code chunk as is. It makes some slight formatting changes to alter the output to be more aesthetically pleasing. 
+
+library(knitr)
+
+# Change the number in set seed to your own favorite number
+set.seed(400)
+options(width=70)
+options(scipen=99)
+
+
+# this sets text outputted in code chunks to small
+opts_chunk$set(tidy.opts=list(width.wrap=50),tidy=TRUE, size = "vsmall")  
+opts_chunk$set(message = FALSE,                                          
+               warning = FALSE,
+               # "caching" stores objects in code chunks and only rewrites if you change things
+               cache = FALSE,                               
+               # automatically downloads dependency files
+               autodep = TRUE,
+               # 
+               cache.comments = FALSE,
+               # 
+               collapse = TRUE,
+               # change fig.width and fig.height to change the code height and width by default
+               fig.width = 5.5,  
+               fig.height = 4.5,
+               fig.align='center')
+
+
+```
+
+```{r setup-2}
+
+# Always print this out before your assignment
+sessionInfo()
+getwd()
+
+```
+
+
+<!-- ### start answering your problem set here -->
+<!-- You may export your homework in either html or pdf, with the former usually being easier. 
+     To export or compile your Rmd file: click above on 'Knit' then 'Knit to HTML' -->
+<!-- Be sure to submit both your .Rmd file and the compiled .html or .pdf file for full credit -->
+
+
+```{r setup-3}
+
+# load all your libraries in this chunk 
+library('tidyverse')
+# note, do not run install.packages() inside a code chunk. install them in the console outside of a code chunk. 
+
+```
+
+
+
+## Question 1
+
+1a) Text response to part a. 
+
+```{r}
+
+#  answered by submitting compiled markdown
+
+```
+
+
+1b) Response to part b. 
+
+```{r}
+
+#  answered by submitting compiled markdown
+
+```
+
+etc...
+
+
+## Question 2
+
+2a) Response to part a. 
+
+
+```{r}
+#2a
+getwd()
+# getwd() calls the current working directory
+
+#2b
+setwd("/Users/raneemrahman/Desktop/MGSC_310/datasets")
+movies <- read_csv("IMDB_movies.csv")
+
+#2c
+num_rows <- nrow(movies)
+num_columns <- ncol(movies)
+dimensions <- dim(movies)
+num_rows
+num_columns
+dimensions
+
+#2d
+column_names <- names(movies)
+column_names
+
+#2e
+str(movies) #shows datatypes of each variable
+# character variables: movie_title, director_name, country, language, genres, content_rating, color, plot_keywords, actor_1_name, actor_2_name
+
+#2f
+movies %>% slice(1:20)
+
+#2g
+top_10 <- movies %>% 
+  arrange(desc(budget)) %>% 
+  slice(1:10) %>% 
+  select(director_name)
+print(top_10)
+  
+
+2b) Response to part b. 
+# Suppose you are a data scientist hired by a large clothing retailer in the US. Think of one causal and one predictive analysis that you could implement that could help clothing stores navigate the pressure of rising inflation.
+# causal: changing the prices ( if the retailer were to do xyz, what would happen to rising inflation)
+# predictive: model forecasts using previous data (if i can observe past data about retail, I can make predictions about rising inflation)
+
+
+```{r}
+
+
+```
+
+
+## Question 3
+
+Here is only text for question 3. 
+
+Suppose you are a data scientist hired by a large clothing retailer in the US. Think of one causal and one predictive analysis that you could implement that could help clothing stores navigate the pressure of rising inflation.
+causal: changing the prices ( if the retailer were to do xyz, what would happen to rising inflation)
+predictive: model forecasts using previous data (if i can observe past data about retail, I can make predictions about rising inflation)
+
+If you want to add a hypertext link [you can do so](http://www.chapman.edu)
+
+- If you want to add bullets
+  - You
+  - Can 
+  - Do 
+  - It
+
+If you want to add an image [follow this guide](https://stackoverflow.com/questions/25166624/insert-picture-table-in-r-markdown)
+
+
+
